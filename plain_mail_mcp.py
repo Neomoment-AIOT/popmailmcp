@@ -35,6 +35,18 @@ mcp = FastMCP("plain-mail-mcp")
 # Create the FastAPI app with MCP protocol at /mcp
 app = mcp.http_app(path="/mcp")
 
+# Debug: Print registered routes
+print("\n=== Registered MCP Methods ===")
+for method_name in dir(mcp):
+    if not method_name.startswith('_'):
+        method = getattr(mcp, method_name)
+        if hasattr(method, '_is_mcp_method'):
+            print(f"MCP Method: {method_name}")
+print("\n=== Registered Routes ===")
+for route in app.routes:
+    print(f"{route.methods} {route.path}")
+print("\n")
+
 # Fixed: 2025-07-27T01:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
 # ChatGPT requires an ai-plugin.json manifest to register MCP connectors
 from starlette.applications import Starlette
