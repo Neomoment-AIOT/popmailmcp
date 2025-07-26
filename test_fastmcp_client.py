@@ -22,7 +22,7 @@ async def test_fastmcp_client():
     
     try:
         # Connect using FastMCP client
-        async with Client("http://localhost:8088/mcp/") as client:
+        async with Client("http://173.212.228.93:8088/mcp/") as client:
             print("SUCCESS: Connected to FastMCP server successfully!")
             
             # Test 1: List available tools

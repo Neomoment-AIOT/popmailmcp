@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class MCPEmailClient:
     """MCP Email Client using FastMCP library"""
     
-    def __init__(self, base_url: str = "http://localhost:8088/mcp/"):
+    def __init__(self, base_url: str = "http://173.212.228.93:8088/mcp/"):
         self.base_url = base_url
         self.client = None
         

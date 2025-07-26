@@ -89,7 +89,7 @@ def show_command_usage():
     print("METHOD 3: Via HTTP (with MCP client)")
     print("----------------------------------")
     print("1. Start server: python mail_mcp.py")
-    print("2. Server runs on: http://localhost:8088/mcp/")
+    print("2. Server runs on: http://173.212.228.93:8088/mcp/")
     print("3. Connect with MCP-compatible client")
     print("4. Call 'list_messages' tool with parameters")
     print()

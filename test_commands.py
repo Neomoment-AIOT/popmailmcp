@@ -15,12 +15,12 @@ def test_http_server():
     
     print("=== HTTP SERVER TESTING ===")
     print("First, start your server with: python mail_mcp.py")
-    print("Server should be running on: http://localhost:8088/mcp/")
+    print("Server should be running on: http://173.212.228.93:8088/mcp/")
     print()
     
     # Basic server check
     print("1. TEST: Check if server is responding")
-    print("Command: curl -H \"Accept: text/event-stream\" http://localhost:8088/mcp/")
+    print("Command: curl -H \"Accept: text/event-stream\" http://173.212.228.93:8088/mcp/")
     print("Expected: {'jsonrpc': '2.0', 'id': 'server-error', 'error': {'code': -32600, 'message': 'Bad Request: Missing session ID'}}")
     print("(This error means server is working - it needs proper MCP session)")
     print()
@@ -150,7 +150,7 @@ def show_manual_testing_steps():
         "   You should see: Server running on http://0.0.0.0:8088/mcp/",
         "",
         "2. Test server is responding:",
-        "   Command: curl -H \"Accept: text/event-stream\" http://localhost:8088/mcp/",
+        "   Command: curl -H \"Accept: text/event-stream\" http://173.212.228.93:8088/mcp/",
         "   Expected: Error about missing session ID (this is good!)",
         "",
         "3. To test tools, you need email credentials in .env file:",

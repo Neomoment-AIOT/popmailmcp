@@ -6,6 +6,7 @@ Run with:  python mail_mcp.py            # HTTP on :8088 (default)
 import os, ssl, base64, email.header, email.message, logging
 from typing import List, Dict
 from fastmcp import FastMCP
+from fastmcp.server import Server
 from dotenv import load_dotenv
 import poplib, imaplib, smtplib
 
@@ -209,4 +210,12 @@ if __name__ == "__main__":
         mcp.run(transport="stdio")
     else:
         port = int(os.getenv("PORT", "8088"))
-        mcp.run(transport="http", host="0.0.0.0", port=port)
+        # Fixed: 2025-07-26T21:55:00+05:00 - Added CORS headers for ChatGPT web interface connectivity
+        # Enable CORS for ChatGPT's web interface (chat.openai.com)
+        cors_headers = {
+            "Access-Control-Allow-Origin": "*",  # Allow all origins (or specify "https://chat.openai.com")
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+            "Access-Control-Max-Age": "86400"  # Cache preflight for 24 hours
+        }
+        mcp.run(transport="http", host="0.0.0.0", port=port, cors=cors_headers)

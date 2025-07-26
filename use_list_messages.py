@@ -17,7 +17,7 @@ def test_list_messages_http():
     print("=" * 35)
     
     # MCP server URL
-    server_url = "http://localhost:8088/mcp/"
+    server_url = "http://173.212.228.93:8088/mcp/"
     
     # Request to list messages
     request_data = {

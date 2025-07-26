@@ -56,10 +56,10 @@ def test_server_basic():
     print("Next steps:")
     print("1. Add email credentials to .env file")
     print("2. Run: python mail_mcp.py")
-    print("3. Server will be available at http://localhost:8088/mcp/")
+    print("3. Server will be available at http://173.212.228.93:8088/mcp/")
     print()
     print("Test server response with:")
-    print('curl -H "Accept: text/event-stream" http://localhost:8088/mcp/')
+    print('curl -H "Accept: text/event-stream" http://173.212.228.93:8088/mcp/')
 
 if __name__ == "__main__":
     test_server_basic()
