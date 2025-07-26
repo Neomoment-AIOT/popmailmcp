@@ -107,6 +107,97 @@ mcp = FastMCP(
 # This enables ChatGPT web interface connectivity by adding proper CORS headers
 mcp.add_middleware(cors_middleware[0])  # Use the Middleware object from cors_middleware list
 
+# Fixed: 2025-07-27T00:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
+# ChatGPT requires an ai-plugin.json manifest to register MCP connectors
+@mcp.get("/")
+async def root():
+    """Serve AI plugin manifest at root endpoint for ChatGPT connector registration."""
+    return {
+        "schema_version": "v1",
+        "name_for_model": "plain_mail_mcp",
+        "name_for_human": "Email Management",
+        "description_for_model": "A comprehensive email management tool that provides POP3/IMAP/SMTP capabilities for reading, sending, and managing emails. Supports listing messages, retrieving email content, flagging/unflagging messages, deleting emails, and sending new messages with CC/BCC support.",
+        "description_for_human": "Manage your emails through POP3/IMAP/SMTP protocols. Read, send, organize, and delete emails.",
+        "auth": {
+            "type": "none"
+        },
+        "api": {
+            "type": "openapi",
+            "url": "http://173.212.228.93:8088/openapi.json"
+        },
+        "logo_url": "http://173.212.228.93:8088/logo.png",
+        "contact_email": "suhail.c@neomoment.org",
+        "legal_info_url": "http://173.212.228.93:8088/legal"
+    }
+
+@mcp.get("/.well-known/ai-plugin.json")
+async def ai_plugin_manifest():
+    """Serve AI plugin manifest at standard well-known location."""
+    return await root()
+
+@mcp.get("/openapi.json")
+async def openapi_schema():
+    """Serve OpenAPI schema for the MCP tools."""
+    return {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "POP Mail MCP Server",
+            "description": "Email management via POP3/IMAP/SMTP protocols",
+            "version": "1.0.0"
+        },
+        "servers": [
+            {"url": "http://173.212.228.93:8088"}
+        ],
+        "paths": {
+            "/mcp/": {
+                "post": {
+                    "summary": "MCP Protocol Endpoint",
+                    "description": "Main MCP protocol endpoint for email management tools",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "jsonrpc": {"type": "string", "example": "2.0"},
+                                        "method": {"type": "string"},
+                                        "params": {"type": "object"},
+                                        "id": {"type": "integer"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "MCP protocol response",
+                            "content": {
+                                "text/event-stream": {
+                                    "schema": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "components": {
+            "schemas": {
+                "EmailMessage": {
+                    "type": "object",
+                    "properties": {
+                        "uid": {"type": "string"},
+                        "from": {"type": "string"},
+                        "subject": {"type": "string"},
+                        "date": {"type": "string"},
+                        "is_flagged": {"type": "boolean"}
+                    }
+                }
+            }
+        }
+    }
+
 # ---------------- reading / listing ---------------- #
 
 @mcp.tool(description="List newest messages (optionally only flagged).")
