@@ -82,7 +82,7 @@ cors_middleware = [
         allow_origins=["*"],  # Allow all origins including ChatGPT web interface
         allow_methods=["*"],  # Allow all HTTP methods
         allow_headers=["*"],  # Allow all headers
-        allow_credentials=False  # Disable credentials for security
+        allow_credentials=True  # Enable credentials for security
     )
 ]
 
@@ -96,20 +96,17 @@ cors_middleware = [
 #     description="Connector that exposes POP/IMAP/SMTP tools."
 # )
 
-# Fixed: 2025-07-26T23:58:49+05:00 - Removed validation=False (not supported in this FastMCP version)
-# Will try alternative approaches for ChatGPT compatibility
-mcp = FastMCP(
-    name="plain-mail-mcp",
-    version="1.0.0"
+# Fixed: 2025-07-27T01:21:00+05:00 - Improved FastMCP setup for ChatGPT compatibility
+# Using lessons learned from plain_mail_mcp.py and troubleshooting
+mcp = FastMCP("plain-mail-mcp")
+
+# Fixed: 2025-07-27T01:21:00+05:00 - Better CORS middleware integration
+# Pass middleware directly to http_app instead of add_middleware
+# This resolves ChatGPT connector compatibility issues
+app = mcp.http_app(
+    path="/mcp", 
+    custom_middleware=cors_middleware
 )
-
-# Fixed: 2025-07-26T23:03:00+05:00 - Add CORS middleware using properly formatted Middleware object
-# This enables ChatGPT web interface connectivity by adding proper CORS headers
-mcp.add_middleware(cors_middleware[0])  # Use the Middleware object from cors_middleware list
-
-# Fixed: 2025-07-27T00:37:00+05:00 - Removed @mcp.get() decorators (not supported in FastMCP)
-# FastMCP is for MCP protocol only, not general HTTP routes like FastAPI
-# Will need alternative approach for serving ai-plugin.json manifest
 
 # ---------------- reading / listing ---------------- #
 
@@ -236,6 +233,7 @@ if __name__ == "__main__":
         mcp.run(transport="stdio")
     else:
         port = int(os.getenv("PORT", "8088"))
-        # Fixed: 2025-07-26T23:01:00+05:00 - Reverting to basic approach since custom_middleware not supported
-        # Will need to implement CORS through alternative method
-        mcp.run(transport="http", host="0.0.0.0", port=port)
+        # Fixed: 2025-07-27T01:21:00+05:00 - Use uvicorn directly for better ChatGPT compatibility
+        # This approach mirrors plain_mail_mcp.py which resolves connector issues
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=port)
