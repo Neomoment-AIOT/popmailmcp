@@ -103,6 +103,7 @@ mcp = FastMCP(
     version="1.0.0",
     # Enable compatibility mode for ChatGPT connector
     validation=False  # Disable strict header validation
+    
 )
 
 # Fixed: 2025-07-26T23:03:00+05:00 - Add CORS middleware using properly formatted Middleware object
@@ -129,6 +130,7 @@ def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]
             ok, msgdata = imap.uid("FETCH", uid, "(FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])")
             hdr_bytes = msgdata[0][1]
             msg = email.message_from_bytes(hdr_bytes)
+            messages_not_found = False
             results.append({
                 "uid": uid.decode(),
                 "from": _decode_header(msg.get("From", "")),
