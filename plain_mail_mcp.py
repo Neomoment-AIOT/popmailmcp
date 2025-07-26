@@ -166,20 +166,31 @@ if __name__ == "__main__":
     import threading
 
     # Create a separate FastAPI app for the plugin manifest
-    from fastapi import FastAPI, Response
+    from fastapi import FastAPI, Response, Request
     from fastapi.middleware.cors import CORSMiddleware
 
     # Create FastAPI app for the plugin endpoints
     plugin_app = FastAPI()
 
-    # Add CORS middleware to the plugin app
+    # Add CORS middleware to the plugin app with explicit OPTIONS handling
     plugin_app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
+    
+    # Explicitly handle OPTIONS for all routes
+    @plugin_app.middleware("http")
+    async def add_cors_headers(request: Request, call_next):
+        response = await call_next(request)
+        if request.method == "OPTIONS":
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
 
     @plugin_app.get("/")
     @plugin_app.get("/.well-known/ai-plugin.json")
