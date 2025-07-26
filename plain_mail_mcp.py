@@ -173,11 +173,19 @@ if __name__ == "__main__":
     plugin_app = FastAPI()
 
     # Add CORS middleware to the plugin app with explicit OPTIONS handling
+    # Allow ngrok domain and local development
+    allowed_origins = [
+        "https://witty-enormous-hippo.ngrok-free.app",
+        "http://localhost:8089",
+        "http://127.0.0.1:8089",
+        "http://173.212.228.93:8089"
+    ]
+    
     plugin_app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
         allow_headers=["*"],
         expose_headers=["*"],
     )
@@ -193,9 +201,25 @@ if __name__ == "__main__":
         return response
 
     @plugin_app.post("/")
-    async def handle_post_request():
+    async def handle_post_request(request: Request):
+        # Log the incoming request for debugging
+        print(f"Received POST request with headers: {request.headers}")
+        try:
+            body = await request.json()
+            print(f"Request body: {body}")
+        except Exception as e:
+            print(f"Error reading request body: {e}")
+        
         # Handle POST requests to the root endpoint
-        return {"status": "success", "message": "Request received"}
+        return {
+            "status": "success",
+            "message": "Request received",
+            "endpoints": {
+                "mcp": "/mcp",
+                "openapi": "/openapi.json",
+                "manifest": "/.well-known/ai-plugin.json"
+            }
+        }
 
     @plugin_app.get("/")
     @plugin_app.get("/.well-known/ai-plugin.json")
