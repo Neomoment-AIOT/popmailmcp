@@ -96,9 +96,13 @@ cors_middleware = [
 #     description="Connector that exposes POP/IMAP/SMTP tools."
 # )
 
+# Fixed: 2025-07-26T23:46:00+05:00 - Add ChatGPT compatibility for Accept headers
+# ChatGPT's MCP connector doesn't send the required Accept headers, so we configure FastMCP to be more lenient
 mcp = FastMCP(
     name="plain-mail-mcp",
-    version="1.0.0"
+    version="1.0.0",
+    # Enable compatibility mode for ChatGPT connector
+    validation=False  # Disable strict header validation
 )
 
 # Fixed: 2025-07-26T23:03:00+05:00 - Add CORS middleware using properly formatted Middleware object
