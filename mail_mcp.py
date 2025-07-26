@@ -6,7 +6,8 @@ Run with:  python mail_mcp.py            # HTTP on :8088 (default)
 import os, ssl, base64, email.header, email.message, logging
 from typing import List, Dict
 from fastmcp import FastMCP
-from fastmcp.server import Server
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import poplib, imaplib, smtplib
 
@@ -71,6 +72,20 @@ def _decode_header(raw: str) -> str:
         for b, enc in parts
     )
 
+# ────────────────────────── CORS Configuration ──────────────────────────── #
+
+# Fixed: 2025-07-26T22:59:00+05:00 - Updated to use Starlette CORSMiddleware per FastMCP documentation
+# This replaces the custom middleware approach which couldn't inject HTTP headers properly
+cors_middleware = [
+    Middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins including ChatGPT web interface
+        allow_methods=["*"],  # Allow all HTTP methods
+        allow_headers=["*"],  # Allow all headers
+        allow_credentials=False  # Disable credentials for security
+    )
+]
+
 # ──────────────────────────  MCP  ────────────────────────────── #
 
 # Fixed: 2025-07-26T14:07:03+05:00 - Removed description parameter as FastMCP doesn't support it
@@ -85,6 +100,10 @@ mcp = FastMCP(
     name="plain-mail-mcp",
     version="1.0.0"
 )
+
+# Fixed: 2025-07-26T23:03:00+05:00 - Add CORS middleware using properly formatted Middleware object
+# This enables ChatGPT web interface connectivity by adding proper CORS headers
+mcp.add_middleware(cors_middleware[0])  # Use the Middleware object from cors_middleware list
 
 # ---------------- reading / listing ---------------- #
 
@@ -210,12 +229,6 @@ if __name__ == "__main__":
         mcp.run(transport="stdio")
     else:
         port = int(os.getenv("PORT", "8088"))
-        # Fixed: 2025-07-26T21:55:00+05:00 - Added CORS headers for ChatGPT web interface connectivity
-        # Enable CORS for ChatGPT's web interface (chat.openai.com)
-        cors_headers = {
-            "Access-Control-Allow-Origin": "*",  # Allow all origins (or specify "https://chat.openai.com")
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-            "Access-Control-Max-Age": "86400"  # Cache preflight for 24 hours
-        }
-        mcp.run(transport="http", host="0.0.0.0", port=port, cors=cors_headers)
+        # Fixed: 2025-07-26T23:01:00+05:00 - Reverting to basic approach since custom_middleware not supported
+        # Will need to implement CORS through alternative method
+        mcp.run(transport="http", host="0.0.0.0", port=port)
