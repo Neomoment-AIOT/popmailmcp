@@ -1,0 +1,13 @@
+# Mail MCP Server Dependencies
+# Generated on: 2025-07-26T19:33:15+05:00
+# 
+# Core MCP framework for building MCP servers
+fastmcp>=0.1.0
+
+# Environment variable management from .env files
+python-dotenv>=1.0.0
+
+# Additional dependencies that might be useful for email handling
+# (Uncomment if needed)
+# email-validator>=2.0.0
+# cryptography>=41.0.0
