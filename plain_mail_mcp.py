@@ -37,14 +37,28 @@ app = mcp.http_app(path="/mcp")
 
 # Debug: Print registered routes
 print("\n=== Registered MCP Methods ===")
+mcp_methods = []
 for method_name in dir(mcp):
     if not method_name.startswith('_'):
-        method = getattr(mcp, method_name)
-        if hasattr(method, '_is_mcp_method'):
-            print(f"MCP Method: {method_name}")
+        try:
+            method = getattr(mcp, method_name)
+            if hasattr(method, '_is_mcp_method'):
+                mcp_methods.append(method_name)
+        except Exception as e:
+            print(f"Warning: Could not inspect method {method_name}: {e}")
+print("\n".join(mcp_methods) or "No MCP methods found")
+
 print("\n=== Registered Routes ===")
 for route in app.routes:
-    print(f"{route.methods} {route.path}")
+    try:
+        if hasattr(route, 'methods'):
+            print(f"{' '.join(route.methods)} {route.path}")
+        elif hasattr(route, 'path'):
+            print(f"UNKNOWN_METHODS {route.path}")
+        else:
+            print(f"Route: {route}")
+    except Exception as e:
+        print(f"Error inspecting route {route}: {e}")
 print("\n")
 
 # Fixed: 2025-07-27T01:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
