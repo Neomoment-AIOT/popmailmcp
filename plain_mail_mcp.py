@@ -310,6 +310,35 @@ if __name__ == "__main__":
         from fastapi.responses import FileResponse
         return FileResponse("LogoFile.png", media_type="image/png")
 
+    # OAuth configuration endpoint required by ChatGPT
+    @plugin_app.get("/.well-known/oauth-configuration")
+    async def oauth_config():
+        """Return OAuth configuration for ChatGPT connector."""
+        return {
+            "client_id": "popmail-mcp",
+            "redirect_uris": ["https://chat.openai.com/aip/oauth/callback"],
+            "auth_uri": "https://witty-enormous-hippo.ngrok-free.app/oauth/authorize",
+            "token_uri": "https://witty-enormous-hippo.ngrok-free.app/oauth/token",
+            "scopes": ["email:read", "email:write"],
+            "response_types": ["code"],
+            "grant_types": ["authorization_code", "refresh_token"],
+            "token_endpoint_auth_method": "none"
+        }
+
+    # OAuth token endpoint
+    @plugin_app.post("/oauth/token")
+    async def oauth_token(grant_type: str = None, code: str = None, refresh_token: str = None):
+        """OAuth 2.0 token endpoint for access and refresh tokens."""
+        # In a real implementation, you would validate the code/refresh_token
+        # and generate proper access/refresh tokens
+        return {
+            "access_token": "dummy_access_token",
+            "token_type": "bearer",
+            "expires_in": 3600,
+            "refresh_token": "dummy_refresh_token",
+            "scope": "email:read email:write"
+        }
+
     @plugin_app.get("/legal")
     async def legal():
         return {"message": """Of course. Integrating a ChatGPT or other Large Language Model (LLM) into a server, especially a public one like a Minecraft server (often associated with "MCP"), introduces unique challenges. It's crucial to have clear disclaimers to manage user expectations, limit your liability, and maintain a healthy community.
