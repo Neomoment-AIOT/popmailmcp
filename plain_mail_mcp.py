@@ -102,23 +102,6 @@ def openapi_schema():
         }
     }
 
-# Add manifest routes to the existing Starlette app
-async def root_endpoint(request):
-    return JSONResponse(ai_plugin_manifest())
-
-async def ai_plugin_endpoint(request):
-    return JSONResponse(ai_plugin_manifest())
-
-async def openapi_endpoint(request):
-    return JSONResponse(openapi_schema())
-
-# Add routes to the existing app
-app.router.routes.extend([
-    Route("/", root_endpoint, methods=["GET"]),
-    Route("/.well-known/ai-plugin.json", ai_plugin_endpoint, methods=["GET"]),
-    Route("/openapi.json", openapi_endpoint, methods=["GET"])
-])
-
 @mcp.tool
 def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]:
     """Return up to *max_items* newest messages (POP3)."""
@@ -142,7 +125,7 @@ def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]
     return list(reversed(messages))
 
 @mcp.tool
-def get_message(uid: int) -> str    :
+def get_message(uid: int) -> str:
     """Return full raw RFC‑822 message identified by POP3 ordinal *uid*."""
     conn = poplib.POP3_SSL(MAIL_HOST, MAIL_POP_PORT, context=ssl_context) if USE_SSL \
         else poplib.POP3(MAIL_HOST, MAIL_POP_PORT)
@@ -189,5 +172,100 @@ def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") ->
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8088)
-    
+    import threading
+
+    # Create a separate FastAPI app for the plugin manifest
+    from fastapi import FastAPI, Response
+    from fastapi.middleware.cors import CORSMiddleware
+
+    # Create FastAPI app for the plugin endpoints
+    plugin_app = FastAPI()
+
+    # Add CORS middleware to the plugin app
+    plugin_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @plugin_app.get("/")
+    @plugin_app.get("/.well-known/ai-plugin.json")
+    async def plugin_manifest():
+        return {
+            "schema_version": "v1",
+            "name_for_human": "Email Manager",
+            "name_for_model": "email_manager",
+            "description_for_human": "Manage your email - send, receive, and organize messages with ease.",
+            "description_for_model": "A tool for managing email. It can send emails, check incoming messages, and manage email folders.",
+            "auth": {"type": "none"},
+            "api": {
+                "type": "openapi",
+                "url": "http://173.212.228.93:8088/openapi.json"
+            },
+            "logo_url": "http://173.212.228.93:8088/logo.png",
+            "contact_email": "suhail.c@neomoment.org",
+            "legal_info_url": "http://173.212.228.93:8088/legal"
+        }
+
+    @plugin_app.get("/openapi.json")
+    async def openapi_schema():
+        return {
+            "openapi": "3.0.1",
+            "info": {
+                "title": "Email Manager API",
+                "version": "1.0.0",
+                "description": "API for managing emails through MCP protocol"
+            },
+            "servers": [{"url": "http://173.212.228.93:8088"}],
+            "paths": {
+                "/mcp": {
+                    "post": {
+                        "description": "MCP protocol endpoint for email operations",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {"type": "object"}
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "MCP response",
+                                "content": {
+                                    "application/json": {"schema": {"type": "object"}}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    @plugin_app.get("/logo.png")
+    async def logo():
+        # Return a placeholder logo
+        from fastapi.responses import FileResponse
+        return FileResponse("logo.png", media_type="image/png")
+
+    @plugin_app.get("/legal")
+    async def legal():
+        return {"message": "Legal information for Email Manager"}
+
+    # Start the MCP server in a separate thread
+    def run_mcp_server():
+        mcp.run(transport="http", host="0.0.0.0", port=8088, path="/mcp")
+
+    # Start the plugin API server in the main thread
+    def run_plugin_server():
+        import uvicorn
+        uvicorn.run(plugin_app, host="0.0.0.0", port=8089)
+
+    # Start MCP server in a separate thread
+    mcp_thread = threading.Thread(target=run_mcp_server, daemon=True)
+    mcp_thread.start()
+
+    # Start plugin server in the main thread
+    run_plugin_server()
