@@ -28,21 +28,12 @@ if ALLOW_SELF_SIGNED:
     ssl_context.verify_mode = ssl.CERT_NONE
 
 from fastmcp import FastMCP
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
 
+# Create FastMCP instance
 mcp = FastMCP("plain-mail-mcp")
 
-middleware = [
-    Middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-]
-
-app = mcp.http_app(path="/mcp", custom_middleware=middleware)
+# Create the FastAPI app with MCP protocol at /mcp
+app = mcp.http_app(path="/mcp")
 
 # Fixed: 2025-07-27T01:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
 # ChatGPT requires an ai-plugin.json manifest to register MCP connectors
