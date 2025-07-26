@@ -4,9 +4,12 @@ import poplib
 import smtplib
 from email import message_from_bytes
 from email.header import decode_header, make_header
-from typing import List, Dict
-
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
+import time
+import secrets
+import json
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -17,6 +20,11 @@ MAIL_POP_PORT = int(os.getenv("MAIL_POP_PORT", "110"))
 MAIL_SMTP_PORT = int(os.getenv("MAIL_SMTP_PORT", "587"))
 MAIL_SSL = os.getenv("MAIL_SSL", "0")
 MAIL_ALLOW_SELF_SIGNED = os.getenv("MAIL_ALLOW_SELF_SIGNED", "0")
+
+OAUTH_CLIENT_ID = "popmail-mcp"
+OAUTH_CLIENT_SECRET = os.getenv("OAUTH_CLIENT_SECRET", secrets.token_urlsafe(32))
+OAUTH_ACCESS_TOKEN_EXPIRE_SECONDS = 3600  # 1 hour
+OAUTH_REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
 
 USE_SSL = MAIL_SSL not in ["0", "false", "False", None]
 ALLOW_SELF_SIGNED = MAIL_ALLOW_SELF_SIGNED in ["1", "true", "True"]
@@ -192,8 +200,44 @@ if __name__ == "__main__":
     import threading
 
     # Create a separate FastAPI app for the plugin manifest
-    from fastapi import FastAPI, Response, Request
+    from fastapi import FastAPI, Response, Request, Depends, HTTPException, status
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
+    from fastapi.security import OAuth2AuthorizationCodeBearer
+    from pydantic import BaseModel
+
+    # OAuth token storage (in-memory for now, use a database in production)
+    oauth_tokens = {}
+    oauth_codes = {}
+
+    def generate_token(user_id: str, scopes: list = None) -> dict:
+        """Generate OAuth access and refresh tokens."""
+        if scopes is None:
+            scopes = ["email:read", "email:write"]
+            
+        access_token = f"access_{secrets.token_urlsafe(32)}"
+        refresh_token = f"refresh_{secrets.token_urlsafe(32)}"
+        expires_at = int(time.time()) + OAUTH_ACCESS_TOKEN_EXPIRE_SECONDS
+        
+        token_data = {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": OAUTH_ACCESS_TOKEN_EXPIRE_SECONDS,
+            "refresh_token": refresh_token,
+            "scope": " ".join(scopes),
+            "user_id": user_id,
+            "expires_at": expires_at
+        }
+        
+        # Store the refresh token
+        oauth_tokens[refresh_token] = {
+            "access_token": access_token,
+            "user_id": user_id,
+            "scopes": scopes,
+            "expires_at": int(time.time()) + (OAUTH_REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600)
+        }
+        
+        return token_data
 
     # Create FastAPI app for the plugin endpoints
     plugin_app = FastAPI()
@@ -314,30 +358,103 @@ if __name__ == "__main__":
     @plugin_app.get("/.well-known/oauth-configuration")
     async def oauth_config():
         """Return OAuth configuration for ChatGPT connector."""
+        base_url = "https://witty-enormous-hippo.ngrok-free.app"
         return {
-            "client_id": "popmail-mcp",
-            "redirect_uris": ["https://chat.openai.com/aip/oauth/callback"],
-            "auth_uri": "https://witty-enormous-hippo.ngrok-free.app/oauth/authorize",
-            "token_uri": "https://witty-enormous-hippo.ngrok-free.app/oauth/token",
+            "client_id": OAUTH_CLIENT_ID,
+            "redirect_uris": [f"{base_url}/oauth/callback"],
+            "auth_uri": f"{base_url}/oauth/authorize",
+            "token_uri": f"{base_url}/oauth/token",
             "scopes": ["email:read", "email:write"],
             "response_types": ["code"],
             "grant_types": ["authorization_code", "refresh_token"],
             "token_endpoint_auth_method": "none"
         }
 
+    # OAuth authorization endpoint
+    @plugin_app.get("/oauth/authorize")
+    async def oauth_authorize(
+        response_type: str,
+        client_id: str,
+        redirect_uri: str,
+        scope: str = None,
+        state: str = None
+    ):
+        """OAuth 2.0 authorization endpoint."""
+        if client_id != OAUTH_CLIENT_ID:
+            raise HTTPException(status_code=400, detail="Invalid client_id")
+            
+        # In a real app, you'd show a login/consent page here
+        # For simplicity, we'll auto-approve all requests
+        
+        # Generate an authorization code
+        code = f"auth_{secrets.token_urlsafe(16)}"
+        oauth_codes[code] = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "scope": scope,
+            "expires_at": int(time.time()) + 600,  # 10 minutes
+            "user_id": "chatgpt-user"  # In a real app, this would be the logged-in user
+        }
+        
+        # Redirect back with the code
+        from fastapi.responses import RedirectResponse
+        redirect_url = f"{redirect_uri}?code={code}"
+        if state:
+            redirect_url += f"&state={state}"
+        return RedirectResponse(url=redirect_url)
+
     # OAuth token endpoint
     @plugin_app.post("/oauth/token")
-    async def oauth_token(grant_type: str = None, code: str = None, refresh_token: str = None):
-        """OAuth 2.0 token endpoint for access and refresh tokens."""
-        # In a real implementation, you would validate the code/refresh_token
-        # and generate proper access/refresh tokens
-        return {
-            "access_token": "dummy_access_token",
-            "token_type": "bearer",
-            "expires_in": 3600,
-            "refresh_token": "dummy_refresh_token",
-            "scope": "email:read email:write"
-        }
+    async def oauth_token(
+        grant_type: str,
+        code: str = None,
+        refresh_token: str = None,
+        redirect_uri: str = None,
+        client_id: str = None
+    ):
+        """OAuth 2.0 token endpoint."""
+        try:
+            if grant_type == "authorization_code":
+                if not code or not redirect_uri or not client_id:
+                    raise HTTPException(status_code=400, detail="Missing required parameters")
+                
+                # Verify the authorization code
+                code_data = oauth_codes.pop(code, None)
+                if not code_data or code_data["expires_at"] < time.time():
+                    raise HTTPException(status_code=400, detail="Invalid or expired authorization code")
+                
+                # Generate tokens
+                user_id = code_data["user_id"]
+                scopes = code_data["scope"].split() if code_data["scope"] else ["email:read", "email:write"]
+                
+                return generate_token(user_id, scopes)
+                
+            elif grant_type == "refresh_token":
+                if not refresh_token:
+                    raise HTTPException(status_code=400, detail="Missing refresh_token")
+                
+                # Verify the refresh token
+                token_data = oauth_tokens.get(refresh_token)
+                if not token_data or token_data["expires_at"] < time.time():
+                    raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
+                
+                # Generate new tokens
+                user_id = token_data["user_id"]
+                scopes = token_data["scopes"]
+                
+                # Remove the old refresh token
+                oauth_tokens.pop(refresh_token, None)
+                
+                return generate_token(user_id, scopes)
+                
+            else:
+                raise HTTPException(status_code=400, detail="Unsupported grant_type")
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Error in oauth_token: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal server error")
 
     @plugin_app.get("/legal")
     async def legal():
