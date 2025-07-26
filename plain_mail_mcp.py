@@ -192,6 +192,11 @@ if __name__ == "__main__":
             response.headers["Access-Control-Allow-Headers"] = "*"
         return response
 
+    @plugin_app.post("/")
+    async def handle_post_request():
+        # Handle POST requests to the root endpoint
+        return {"status": "success", "message": "Request received"}
+
     @plugin_app.get("/")
     @plugin_app.get("/.well-known/ai-plugin.json")
     async def plugin_manifest():
@@ -247,8 +252,11 @@ if __name__ == "__main__":
         }
 
     @plugin_app.get("/logo.png")
-    async def logo():
-        # Return a placeholder logo
+    @plugin_app.get("/favicon.ico")
+    @plugin_app.get("/favicon.png")
+    @plugin_app.get("/favicon.svg")
+    async def favicon():
+        # Serve the logo file for all favicon requests
         from fastapi.responses import FileResponse
         return FileResponse("LogoFile.png", media_type="image/png")
 
