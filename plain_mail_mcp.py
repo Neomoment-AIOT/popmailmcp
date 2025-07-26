@@ -44,6 +44,81 @@ middleware = [
 
 app = mcp.http_app(path="/mcp", custom_middleware=middleware)
 
+# Fixed: 2025-07-27T01:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
+# ChatGPT requires an ai-plugin.json manifest to register MCP connectors
+from starlette.applications import Starlette
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
+# AI Plugin Manifest for ChatGPT
+def ai_plugin_manifest():
+    return {
+        "schema_version": "v1",
+        "name_for_model": "plain_mail_mcp",
+        "name_for_human": "Email Management",
+        "description_for_model": "A comprehensive email management tool that provides POP3/SMTP capabilities for reading, sending, and managing emails. Supports listing messages, retrieving email content, deleting emails, and sending new messages with CC/BCC support.",
+        "description_for_human": "Manage your emails through POP3/SMTP protocols. Read, send, organize, and delete emails.",
+        "auth": {
+            "type": "none"
+        },
+        "api": {
+            "type": "openapi",
+            "url": "http://173.212.228.93:8088/openapi.json"
+        },
+        "logo_url": "http://173.212.228.93:8088/logo.png",
+        "contact_email": "suhail.c@neomoment.org",
+        "legal_info_url": "http://173.212.228.93:8088/legal"
+    }
+
+# OpenAPI Schema for the MCP tools
+def openapi_schema():
+    return {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "POP Mail MCP Server",
+            "description": "Email management via POP3/SMTP protocols",
+            "version": "1.0.0"
+        },
+        "servers": [
+            {"url": "http://173.212.228.93:8088"}
+        ],
+        "paths": {
+            "/mcp": {
+                "post": {
+                    "summary": "MCP Protocol Endpoint",
+                    "description": "Main MCP protocol endpoint for email management tools",
+                    "responses": {
+                        "200": {
+                            "description": "MCP protocol response",
+                            "content": {
+                                "text/event-stream": {
+                                    "schema": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+# Add manifest routes to the existing Starlette app
+async def root_endpoint(request):
+    return JSONResponse(ai_plugin_manifest())
+
+async def ai_plugin_endpoint(request):
+    return JSONResponse(ai_plugin_manifest())
+
+async def openapi_endpoint(request):
+    return JSONResponse(openapi_schema())
+
+# Add routes to the existing app
+app.router.routes.extend([
+    Route("/", root_endpoint, methods=["GET"]),
+    Route("/.well-known/ai-plugin.json", ai_plugin_endpoint, methods=["GET"]),
+    Route("/openapi.json", openapi_endpoint, methods=["GET"])
+])
+
 @mcp.tool
 def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]:
     """Return up to *max_items* newest messages (POP3)."""

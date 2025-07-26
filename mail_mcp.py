@@ -96,17 +96,9 @@ cors_middleware = [
 #     description="Connector that exposes POP/IMAP/SMTP tools."
 # )
 
-# Fixed: 2025-07-27T01:21:00+05:00 - Improved FastMCP setup for ChatGPT compatibility
-# Using lessons learned from plain_mail_mcp.py and troubleshooting
+# Fixed: 2025-07-27T01:26:00+05:00 - Revert to working FastMCP setup
+# custom_middleware parameter not supported in this FastMCP version
 mcp = FastMCP("plain-mail-mcp")
-
-# Fixed: 2025-07-27T01:21:00+05:00 - Better CORS middleware integration
-# Pass middleware directly to http_app instead of add_middleware
-# This resolves ChatGPT connector compatibility issues
-app = mcp.http_app(
-    path="/mcp", 
-    custom_middleware=cors_middleware
-)
 
 # ---------------- reading / listing ---------------- #
 
@@ -233,7 +225,6 @@ if __name__ == "__main__":
         mcp.run(transport="stdio")
     else:
         port = int(os.getenv("PORT", "8088"))
-        # Fixed: 2025-07-27T01:21:00+05:00 - Use uvicorn directly for better ChatGPT compatibility
-        # This approach mirrors plain_mail_mcp.py which resolves connector issues
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=port)
+        # Fixed: 2025-07-27T01:26:00+05:00 - Revert to mcp.run() since custom_middleware not supported
+        # Your FastMCP version has limited parameter support, using basic approach
+        mcp.run(transport="http", host="0.0.0.0", port=port)
