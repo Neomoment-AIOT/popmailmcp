@@ -54,11 +54,11 @@ def ai_plugin_manifest():
         },
         "api": {
             "type": "openapi",
-            "url": "http://173.212.228.93:8088/openapi.json"
+            "url": "http://173.212.228.93:8089/openapi.json"
         },
-        "logo_url": "http://173.212.228.93:8088/logo.png",
+        "logo_url": "http://173.212.228.93:8089/logo.png",
         "contact_email": "suhail.c@neomoment.org",
-        "legal_info_url": "http://173.212.228.93:8088/legal"
+        "legal_info_url": "http://173.212.228.93:8089/legal"
     }
 
 # OpenAPI Schema for the MCP tools
@@ -71,7 +71,7 @@ def openapi_schema():
             "version": "1.0.0"
         },
         "servers": [
-            {"url": "http://173.212.228.93:8088"}
+            {"url": "http://173.212.228.93:8089"}
         ],
         "paths": {
             "/mcp": {
@@ -193,11 +193,11 @@ if __name__ == "__main__":
             "auth": {"type": "none"},
             "api": {
                 "type": "openapi",
-                "url": "http://173.212.228.93:8088/openapi.json"
+                "url": "http://173.212.228.93:8089/openapi.json"
             },
-            "logo_url": "http://173.212.228.93:8088/logo.png",
+            "logo_url": "http://173.212.228.93:8089/logo.png",
             "contact_email": "suhail.c@neomoment.org",
-            "legal_info_url": "http://173.212.228.93:8088/legal"
+            "legal_info_url": "http://173.212.228.93:8089/legal"
         }
 
     @plugin_app.get("/openapi.json")
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 "version": "1.0.0",
                 "description": "API for managing emails through MCP protocol"
             },
-            "servers": [{"url": "http://173.212.228.93:8088"}],
+            "servers": [{"url": "http://173.212.228.93:8089"}],
             "paths": {
                 "/mcp": {
                     "post": {
@@ -239,11 +239,67 @@ if __name__ == "__main__":
     async def logo():
         # Return a placeholder logo
         from fastapi.responses import FileResponse
-        return FileResponse("logo.png", media_type="image/png")
+        return FileResponse("LogoFile.png", media_type="image/png")
 
     @plugin_app.get("/legal")
     async def legal():
-        return {"message": "Legal information for Email Manager"}
+        return {"message": """Of course. Integrating a ChatGPT or other Large Language Model (LLM) into a server, especially a public one like a Minecraft server (often associated with "MCP"), introduces unique challenges. It's crucial to have clear disclaimers to manage user expectations, limit your liability, and maintain a healthy community.
+
+Here are essential points and disclaimers to consider, categorized for clarity.
+
+---
+
+### **Category 1: Nature of the AI & Accuracy of Information**
+
+These disclaimers manage expectations about what the AI is and what it can do.
+
+* **AI, Not Human:** "The chat assistant you are interacting with is an AI language model (powered by OpenAI's GPT technology). It is not a human, a server administrator, or a moderator. Its responses are generated algorithmically."
+* **Potential for Inaccuracy:** "The AI's responses may be inaccurate, incomplete, or nonsensical. It can 'hallucinate' facts or make up information. Do not rely on it for critical in-game information (e.g., rare item locations, complex crafting recipes) or any real-world advice."
+* **Knowledge Cutoff:** "The AI's knowledge is based on data up to a certain point in the past and it does not have real-time information. It will not be aware of recent server events, updates, player-built structures, or rule changes unless specifically programmed to be."
+* **No Consciousness or Feelings:** "The AI does not have beliefs, opinions, or feelings. Its responses are a reflection of the patterns in the data it was trained on, not a personal viewpoint."
+* **Potential for Bias:** "The AI may generate content that reflects biases present in its training data. We do not endorse any biased, offensive, or inappropriate statements made by the AI. Please report any such instances to the server staff."
+
+---
+
+### **Category 2: User Responsibility & Conduct**
+
+These points outline how users are expected to behave when interacting with the AI.
+
+* **User is Responsible:** "You are responsible for your interactions with the AI. Attempting to 'jailbreak,' manipulate, or trick the AI into violating server rules is a violation of server rules itself."
+* **Do Not Share Personal Information:** "**NEVER** share personal information with the AI, including your real name, age, location, passwords, email address, or any other identifying details. While we strive for privacy, these conversations may be logged or processed by third parties."
+* **AI is Not a Support Ticket:** "The AI is for general queries and entertainment. It cannot resolve player disputes, investigate griefing, issue refunds, or handle technical support requests. For these issues, please contact a human staff member through the proper channels (e.g., Discord ticket, /helpop command)."
+* **Report Misconduct:** "If the AI generates content that is harmful, offensive, or breaks server rules, please take a screenshot and report it to the server staff immediately. This helps us improve the system."
+
+---
+
+### **Category 3: Privacy & Data Handling**
+
+This is crucial for transparency and legal protection.
+
+* **Interaction Logging:** "Please be aware that your conversations with the AI may be logged and reviewed by server administrators for the purposes of moderation, quality control, and system improvement."
+* **Third-Party Data Processing:** "To function, this feature sends your prompts (the questions you ask) to OpenAI (or another third-party AI provider) for processing. By using this feature, you acknowledge and agree that your data will be handled according to their respective privacy policies and terms of service."
+* **No Expectation of Privacy:** "Do not consider your conversations with the AI to be private. They are subject to review by staff and processing by third-party services."
+
+---
+
+### **Category 4: Liability & Service Availability**
+
+These are the core legal-style disclaimers to limit your liability.
+
+* **Use At Your Own Risk:** "This AI feature is provided on an 'as-is' and 'as-available' basis. You use it at your own risk. The server owners and staff are not liable for any damages, loss of items, misinformation, or negative experiences resulting from your use of the AI."
+* **No Guarantee of Service:** "We reserve the right to modify, restrict, or disable the AI feature at any time, for any reason, without notice. Access to the feature is not a guaranteed part of the server experience."
+* **Not Affiliated with OpenAI:** "This server is not an official partner of, nor is it endorsed by, OpenAI or any other AI provider. We are simply using their technology via their public API."
+
+---
+
+### **How to Present These Disclaimers**
+
+You shouldn't just hide these in a long document. Make them accessible.
+
+1.  **Initial Pop-up/Message:** The very first time a player uses the AI command, show them a condensed version of the key warnings (e.g., "This is an AI, not a human. It can be wrong. Do not share personal info. Full rules in /ai_rules.") and require them to agree.
+2.  **A Dedicated Command:** Create a command like `/ai_rules`, `/ai_disclaimer`, or `/chatgpt_info` that prints the full list of points in the game chat.
+3.  **Discord Channel:** Have a dedicated channel in your server's Discord (e.g., `#ai-info-and-rules`) with the complete disclaimers.
+4.  **MOTD (Message of the Day):** Periodically include a short reminder in the server's MOTD, like "Remember to use our AI helper responsibly! /ai_rules for info."""}
 
     # Start the MCP server in a separate thread
     def run_mcp_server():
