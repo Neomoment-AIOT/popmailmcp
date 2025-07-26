@@ -1,0 +1,23 @@
+# Virtual environment folders - Updated 2025-07-26T19:11:31+05:00
+venv/
+.venv/
+.env
+env/
+
+# Node modules
+.node/*
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
