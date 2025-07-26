@@ -294,20 +294,18 @@ if __name__ == "__main__":
     @plugin_app.get("/")
     @plugin_app.get("/.well-known/ai-plugin.json")
     async def plugin_manifest():
+        base_url = "https://witty-enormous-hippo.ngrok-free.app"
         return {
             "schema_version": "v1",
             "name_for_human": "Email Manager",
             "name_for_model": "email_manager",
             "description_for_human": "Manage your email - send, receive, and organize messages with ease.",
             "description_for_model": "A tool for managing email. It can send emails, check incoming messages, and manage email folders.",
-            "auth": {"type": "none"},
-            "api": {
-                "type": "openapi",
-                "url": "http://173.212.228.93:8089/openapi.json"
-            },
-            "logo_url": "http://173.212.228.93:8089/logo.png",
+            "auth": {"type": "oauth", "oauth_client_id": OAUTH_CLIENT_ID},
+            "api": {"type": "openapi", "url": f"{base_url}/openapi.json"},
+            "logo_url": f"{base_url}/logo.png",
             "contact_email": "suhail.c@neomoment.org",
-            "legal_info_url": "http://173.212.228.93:8089/legal"
+            "legal_info_url": f"{base_url}/legal"
         }
 
     @plugin_app.get("/openapi.json")
