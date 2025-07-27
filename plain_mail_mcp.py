@@ -103,7 +103,6 @@ def openapi_schema():
         }
     }
 
-@mcp.tool
 def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]:
     """Return up to *max_items* newest messages (POP3)."""
     messages: List[Dict] = []
@@ -125,7 +124,9 @@ def list_messages(max_items: int = 10, flagged_only: bool = False) -> List[Dict]
     conn.quit()
     return list(reversed(messages))
 
-@mcp.tool
+# Register the tool with FastMCP
+mcp.tool(list_messages)
+
 def get_message(uid: int) -> str:
     """Return full raw RFC‑822 message identified by POP3 ordinal *uid*."""
     conn = poplib.POP3_SSL(MAIL_HOST, MAIL_POP_PORT, context=ssl_context) if USE_SSL \
@@ -136,8 +137,11 @@ def get_message(uid: int) -> str:
     conn.quit()
     return "\n".join(l.decode(errors="replace") for l in lines)
 
-@mcp.tool
+# Register the tool with FastMCP
+mcp.tool(get_message)
+
 def delete_message(uid: int) -> str:
+    """Delete a message by its POP3 ordinal uid."""
     conn = poplib.POP3_SSL(MAIL_HOST, MAIL_POP_PORT, context=ssl_context) if USE_SSL \
         else poplib.POP3(MAIL_HOST, MAIL_POP_PORT)
     conn.user(MAIL_USER)
@@ -146,7 +150,9 @@ def delete_message(uid: int) -> str:
     conn.quit()
     return f"Message {uid} deleted."
 
-@mcp.tool
+# Register the tool with FastMCP
+mcp.tool(delete_message)
+
 def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") -> str:
     """Send a plain‑text e‑mail."""
     from email.message import EmailMessage
@@ -170,6 +176,9 @@ def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") ->
     smtp.send_message(msg, from_addr=MAIL_USER, to_addrs=rcpts)
     smtp.quit()
     return "Email sent."
+
+# Register the tool with FastMCP
+mcp.tool(send_email)
 
 # Debug: Print registered MCP methods AFTER they are defined
 print("\n=== Registered MCP Methods (After Definition) ===")
