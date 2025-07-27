@@ -359,7 +359,7 @@ if __name__ == "__main__":
         base_url = "https://witty-enormous-hippo.ngrok-free.app"
         return {
             "client_id": OAUTH_CLIENT_ID,
-            "redirect_uris": [f"{base_url}/oauth/callback"],
+            "redirect_uris": ["https://chat.openai.com/aip/oauth/callback"],
             "auth_uri": f"{base_url}/oauth/authorize",
             "token_uri": f"{base_url}/oauth/token",
             "scopes": ["email:read", "email:write"],
