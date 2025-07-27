@@ -45,32 +45,6 @@ mcp = FastMCP("plain-mail-mcp")
 # Create the FastAPI app with MCP protocol at /mcp
 app = mcp.http_app(path="/mcp")
 
-# Debug: Print registered routes
-print("\n=== Registered MCP Methods ===")
-mcp_methods = []
-for method_name in dir(mcp):
-    if not method_name.startswith('_'):
-        try:
-            method = getattr(mcp, method_name)
-            if hasattr(method, '_is_mcp_method'):
-                mcp_methods.append(method_name)
-        except Exception as e:
-            print(f"Warning: Could not inspect method {method_name}: {e}")
-print("\n".join(mcp_methods) or "No MCP methods found")
-
-print("\n=== Registered Routes ===")
-for route in app.routes:
-    try:
-        if hasattr(route, 'methods'):
-            print(f"{' '.join(route.methods)} {route.path}")
-        elif hasattr(route, 'path'):
-            print(f"UNKNOWN_METHODS {route.path}")
-        else:
-            print(f"Route: {route}")
-    except Exception as e:
-        print(f"Error inspecting route {route}: {e}")
-print("\n")
-
 # Fixed: 2025-07-27T01:30:00+05:00 - Add AI Plugin Manifest for ChatGPT Connector Registration
 # ChatGPT requires an ai-plugin.json manifest to register MCP connectors
 from starlette.applications import Starlette
@@ -196,6 +170,21 @@ def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") ->
     smtp.send_message(msg, from_addr=MAIL_USER, to_addrs=rcpts)
     smtp.quit()
     return "Email sent."
+
+# Debug: Print registered MCP methods AFTER they are defined
+print("\n=== Registered MCP Methods (After Definition) ===")
+mcp_methods = []
+for method_name in dir(mcp):
+    if not method_name.startswith('_'):
+        try:
+            method = getattr(mcp, method_name)
+            if hasattr(method, '_is_mcp_method') or callable(method) and hasattr(method, '__name__'):
+                if method_name in ['list_messages', 'get_message', 'delete_message', 'send_email']:
+                    mcp_methods.append(method_name)
+        except Exception as e:
+            print(f"Warning: Could not inspect method {method_name}: {e}")
+print("\n".join(mcp_methods) or "No MCP methods found")
+print("\n")
 
 if __name__ == "__main__":
     import uvicorn
