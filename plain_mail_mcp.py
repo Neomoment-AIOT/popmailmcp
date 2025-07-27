@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 import time
 import secrets
 import json
+import hashlib
+import base64
 from datetime import datetime, timedelta
 
 load_dotenv()
@@ -384,14 +386,16 @@ if __name__ == "__main__":
             "code_challenge_methods_supported": ["S256", "plain"]
         }
 
-    # OAuth authorization endpoint
+    # OAuth authorization endpoint with PKCE support
     @plugin_app.get("/oauth/authorize")
     async def oauth_authorize(
         response_type: str,
         client_id: str,
         redirect_uri: str,
         scope: str = None,
-        state: str = None
+        state: str = None,
+        code_challenge: str = None,
+        code_challenge_method: str = None
     ):
         """OAuth 2.0 authorization endpoint."""
         if client_id != OAUTH_CLIENT_ID:
@@ -407,7 +411,9 @@ if __name__ == "__main__":
             "redirect_uri": redirect_uri,
             "scope": scope,
             "expires_at": int(time.time()) + 600,  # 10 minutes
-            "user_id": "chatgpt-user"  # In a real app, this would be the logged-in user
+            "user_id": "chatgpt-user",  # In a real app, this would be the logged-in user
+            "code_challenge": code_challenge,
+            "code_challenge_method": code_challenge_method
         }
         
         # Redirect back with the code
@@ -425,7 +431,8 @@ if __name__ == "__main__":
         code: str = None,
         refresh_token: str = None,
         redirect_uri: str = None,
-        client_id: str = None
+        client_id: str = None,
+        code_verifier: str = None
     ):
         """OAuth 2.0 token endpoint."""
         try:
@@ -437,6 +444,7 @@ if __name__ == "__main__":
                 refresh_token = form_data.get("refresh_token")
                 redirect_uri = form_data.get("redirect_uri")
                 client_id = form_data.get("client_id")
+                code_verifier = form_data.get("code_verifier")
                 
                 print(f"Form data received: {dict(form_data)}")
             if grant_type == "authorization_code":
@@ -447,6 +455,25 @@ if __name__ == "__main__":
                 code_data = oauth_codes.pop(code, None)
                 if not code_data or code_data["expires_at"] < time.time():
                     raise HTTPException(status_code=400, detail="Invalid or expired authorization code")
+                
+                # Validate PKCE if code_challenge was provided
+                if code_data.get("code_challenge"):
+                    if not code_verifier:
+                        raise HTTPException(status_code=400, detail="code_verifier required for PKCE")
+                    
+                    # Verify code challenge
+                    challenge_method = code_data.get("code_challenge_method", "S256")
+                    if challenge_method == "S256":
+                        # SHA256 hash of code_verifier, base64url encoded
+                        verifier_hash = hashlib.sha256(code_verifier.encode()).digest()
+                        verifier_challenge = base64.urlsafe_b64encode(verifier_hash).decode().rstrip('=')
+                        if verifier_challenge != code_data["code_challenge"]:
+                            raise HTTPException(status_code=400, detail="Invalid PKCE code_verifier")
+                    elif challenge_method == "plain":
+                        if code_verifier != code_data["code_challenge"]:
+                            raise HTTPException(status_code=400, detail="Invalid PKCE code_verifier")
+                    else:
+                        raise HTTPException(status_code=400, detail="Unsupported code_challenge_method")
                 
                 # Generate tokens
                 user_id = code_data["user_id"]
