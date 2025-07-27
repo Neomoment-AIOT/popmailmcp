@@ -174,15 +174,27 @@ def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") ->
 # Debug: Print registered MCP methods AFTER they are defined
 print("\n=== Registered MCP Methods (After Definition) ===")
 mcp_methods = []
-for method_name in dir(mcp):
-    if not method_name.startswith('_'):
+
+# Check if methods are registered in the FastMCP instance
+if hasattr(mcp, '_tools'):
+    print(f"FastMCP tools found: {list(mcp._tools.keys())}")
+    mcp_methods.extend(mcp._tools.keys())
+else:
+    print("No _tools attribute found in FastMCP instance")
+
+# Alternative method detection
+for attr_name in dir(mcp):
+    if not attr_name.startswith('_'):
         try:
-            method = getattr(mcp, method_name)
-            if hasattr(method, '_is_mcp_method') or callable(method) and hasattr(method, '__name__'):
-                if method_name in ['list_messages', 'get_message', 'delete_message', 'send_email']:
-                    mcp_methods.append(method_name)
+            attr = getattr(mcp, attr_name)
+            if callable(attr) and attr_name in ['list_messages', 'get_message', 'delete_message', 'send_email']:
+                if attr_name not in mcp_methods:
+                    mcp_methods.append(attr_name)
+                print(f"Found method: {attr_name} - {type(attr)}")
         except Exception as e:
-            print(f"Warning: Could not inspect method {method_name}: {e}")
+            print(f"Warning: Could not inspect {attr_name}: {e}")
+
+print(f"\nTotal MCP methods found: {len(mcp_methods)}")
 print("\n".join(mcp_methods) or "No MCP methods found")
 print("\n")
 
