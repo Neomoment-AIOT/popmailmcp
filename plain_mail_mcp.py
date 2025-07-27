@@ -151,6 +151,7 @@ def delete_message(uid: int) -> str:
     return f"Message {uid} deleted."
 
 # Register the tool with FastMCP
+# Fixed: 2025-07-27T15:55:30+05:00 - Moved mcp.tool registration to proper position after function definition
 mcp.tool(delete_message)
 
 def send_email(to: str, subject: str, body: str, cc: str = "", bcc: str = "") -> str:
