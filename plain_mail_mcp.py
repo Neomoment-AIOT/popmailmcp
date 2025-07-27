@@ -420,7 +420,8 @@ if __name__ == "__main__":
     # OAuth token endpoint
     @plugin_app.post("/oauth/token")
     async def oauth_token(
-        grant_type: str,
+        request: Request,
+        grant_type: str = None,
         code: str = None,
         refresh_token: str = None,
         redirect_uri: str = None,
@@ -428,6 +429,16 @@ if __name__ == "__main__":
     ):
         """OAuth 2.0 token endpoint."""
         try:
+            # Handle form data (standard OAuth 2.0 format)
+            if not grant_type:
+                form_data = await request.form()
+                grant_type = form_data.get("grant_type")
+                code = form_data.get("code")
+                refresh_token = form_data.get("refresh_token")
+                redirect_uri = form_data.get("redirect_uri")
+                client_id = form_data.get("client_id")
+                
+                print(f"Form data received: {dict(form_data)}")
             if grant_type == "authorization_code":
                 if not code or not redirect_uri or not client_id:
                     raise HTTPException(status_code=400, detail="Missing required parameters")
